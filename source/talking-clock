@@ -67,8 +67,13 @@ clock()
             echo "$hour:$minute:${timestamp[2]}" >&2
         fi
 
+<<<<<<< HEAD
+        if [[ $minute -eq 00 ]];then
+            $player -q "$main_dir/$program/$bang"
+=======
         if [[ $minute -eq 0 ]];then
             $player -q "$main_dir/$program/bang.wav"
+>>>>>>> upstream/master
             $player -q "$main_dir/$program/$hour.wav"
             $player -q "$main_dir/$program/0.wav"
             $player -q "$main_dir/$program/0.wav"
@@ -124,7 +129,7 @@ config()
         case ${answer:0:1} in
         y|Y )
             echo "/usr/bin/talking-clock" >> "$HOME/.xprofile"
-            echo "xprofile: yes" > $config
+            echo "xprofile: yes" > $config       
          ;;
         * )
             echo "xprofile: no" > $config
