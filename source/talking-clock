@@ -1,7 +1,23 @@
 #!/bin/bash
 
-program="talking-clock"
-player="aplay"
+#Copyright (C) 2014  Jan <pikkewyn>
+#
+#This program is free software; you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation; either version 3 of the License, or
+#any later version.
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software Foundation,
+#Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+
+readonly debug=false
+readonly program="talking-clock"
+readonly player="aplay"
+readonly config="$HOME/.config/talking-clock.conf"
 
 freq=0
 main_dir="/usr/share"
@@ -15,8 +31,8 @@ print_help()
     cat <<-EOF
 talking-clock:
 -f [n]
-    n: 5, 15, 30 ( min frequency )
-    If no frequency specified clock will play only at full hour.
+    n: 5, 15, 30 ( frequency in minutes )
+    If no flag specified clock will play only at full hour.
 -s
     stops clock
 EOF
@@ -26,12 +42,13 @@ EOF
 
 stop_clock()
 {
-    pid=$(pidof -x -o $$ "${0##*/}")
+    name="${0##*/}"
+    pid=$(pidof -x -o "$$" $name )
 
     if [ -n "$pid" ]
     then
-        kill "$pid"
-        echo "stopping ${BASH_ARGV[0]}"
+        kill $pid
+        echo "stopping $name"
     fi
 }
 
@@ -39,11 +56,24 @@ clock()
 {
     while :
     do
-        minute=$(date +%M)
-        hour=$(date +%l | tr -d ' ')
+        delay=$((60 -  $(date +%s) % 60));
+        sleep $delay
 
+        timestamp=($(date "+%l %M %S"))
+        hour=${timestamp[0]#0}
+        minute=${timestamp[1]#0}
+
+        if [[ $debug == true ]]; then
+            echo "$hour:$minute:${timestamp[2]}" >&2
+        fi
+
+<<<<<<< HEAD
         if [[ $minute -eq 00 ]];then
             $player -q "$main_dir/$program/$bang"
+=======
+        if [[ $minute -eq 0 ]];then
+            $player -q "$main_dir/$program/bang.wav"
+>>>>>>> upstream/master
             $player -q "$main_dir/$program/$hour.wav"
             $player -q "$main_dir/$program/0.wav"
             $player -q "$main_dir/$program/0.wav"
@@ -88,8 +118,29 @@ clock()
             $player -q "$main_dir/$program/50.wav"
             $player -q "$main_dir/$program/5.wav"
         fi
-        sleep 60
-    done | logger
+    done
+}
+
+config()
+{
+    if [[ ! -f $config ]]
+    then
+        read -p "Add talking-clock to .xprofile (y/n)? " answer
+        case ${answer:0:1} in
+        y|Y )
+            echo "/usr/bin/talking-clock" >> "$HOME/.xprofile"
+            echo "xprofile: yes" > $config       
+         ;;
+        * )
+            echo "xprofile: no" > $config
+        ;;
+        esac
+    else
+        if [[ $(grep -q 'xprofile: yes' $config) -eq 0 ]]
+        then
+            sed -i "s/\(talking-clock\)/\1 -$freq/" ~/.xprofile
+        fi
+    fi
 }
 
 if [ "$(which $player &> /dev/null)" ];then
@@ -101,13 +152,15 @@ fi
 
 [[ "$1" == "-s" ]] && stop_clock
 
-if [ "$1" == "-f" ];
+if [[ "$1" == "-f" && $# -eq 2 ]];
 then
-    ( ($2 != 5) && ($2 != 15) && ($2 != 30) ) && print_help
+    [[ $2 != 0 && $2 != 5 && $2 != 15 && $2 != 30 ]] && print_help
     freq=$2
 else
     [[ $1 != "" ]] && print_help
 fi
+
+config
 
 stop_clock
 echo "starting $program"

@@ -8,3 +8,8 @@ talking-clock:
 -s
     stops clock
 ```
+
+**Project website:** 
+[https://talking-clock.com](https://talking-clock.com)
+
+TODO: consider replacing *aplay* with *play* from *sox* package for volume control option.
